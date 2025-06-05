@@ -8,15 +8,21 @@ import uuid
 import time
 import heapq
 import threading
+from fastapi import FastAPI
 
-# Custom validation error handler
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return {"message": "🚀 Welcome to the Ingestion API!"}
+    
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=400,
         content={"detail": "Validation error"}
     )
 
-# Global shared state
 ingestion_store: Dict[str, dict] = {}
 batch_queue = []
 queue_counter = 0
@@ -71,7 +77,6 @@ def process_batch_sync():
                 if ingestion_id in ingestion_store:
                     ingestion_store[ingestion_id]["batches"][batch_idx]["status"] = "triggered"
 
-                    # Update ingestion status if all batches are triggered
                     if all(batch["status"] == "triggered" for batch in ingestion_store[ingestion_id]["batches"]):
                         ingestion_store[ingestion_id]["status"] = "triggered"
 
@@ -79,7 +84,7 @@ def process_batch_sync():
 
         time.sleep(0.1)
 
-# Start background thread for processing batches
+
 background_thread = threading.Thread(target=process_batch_sync, daemon=True)
 background_thread.start()
 
