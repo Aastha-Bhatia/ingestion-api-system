@@ -4,7 +4,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"message": "🎉 Backend is running perfectly!"}
+    return {"message": "Ingestion API is working fine!"}
     
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
