@@ -2,22 +2,21 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, field_validator
-from typing import List, Dict, Optional
+from typing import List, Dict
 from enum import Enum
 import uuid
-import asyncio
-from datetime import datetime
-import heapq
 import time
-from contextlib import asynccontextmanager
+import heapq
 import threading
 
+# Custom validation error handler
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=400,
         content={"detail": "Validation error"}
     )
 
+# Global shared state
 ingestion_store: Dict[str, dict] = {}
 batch_queue = []
 queue_counter = 0
@@ -33,7 +32,7 @@ class Priority(str, Enum):
 class IngestRequest(BaseModel):
     ids: List[int]
     priority: Priority
-    
+
     @field_validator('ids')
     @classmethod
     def validate_ids(cls, v):
@@ -62,29 +61,25 @@ def create_batches(ids: List[int], batch_size: int = 3) -> List[List[int]]:
 
 def process_batch_sync():
     global last_processed_time
-    
     while True:
         current_time = time.time()
-        
+
         with processing_lock:
             if batch_queue and (current_time - last_processed_time) >= RATE_LIMIT_SECONDS:
-
                 priority_val, counter, ingestion_id, batch_idx = heapq.heappop(batch_queue)
-                
+
                 if ingestion_id in ingestion_store:
                     ingestion_store[ingestion_id]["batches"][batch_idx]["status"] = "triggered"
-                    
-                    all_triggered = all(
-                        batch["status"] == "triggered" 
-                        for batch in ingestion_store[ingestion_id]["batches"]
-                    )
-                    if all_triggered:
+
+                    # Update ingestion status if all batches are triggered
+                    if all(batch["status"] == "triggered" for batch in ingestion_store[ingestion_id]["batches"]):
                         ingestion_store[ingestion_id]["status"] = "triggered"
-                
+
                 last_processed_time = current_time
-        
+
         time.sleep(0.1)
 
+# Start background thread for processing batches
 background_thread = threading.Thread(target=process_batch_sync, daemon=True)
 background_thread.start()
 
@@ -94,11 +89,10 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 @app.post("/ingest", status_code=202)
 async def ingest_data(request: IngestRequest):
     global queue_counter
-    
     with processing_lock:
         ingestion_id = str(uuid.uuid4())
         batches = create_batches(request.ids)
-        
+
         batch_objects = []
         for i, batch_ids in enumerate(batches):
             batch_obj = {
@@ -107,11 +101,10 @@ async def ingest_data(request: IngestRequest):
                 "status": "yet_to_start"
             }
             batch_objects.append(batch_obj)
-            
+
             priority_val = get_priority_value(request.priority)
             heapq.heappush(batch_queue, (priority_val, queue_counter, ingestion_id, i))
             queue_counter += 1
-        
 
         ingestion_store[ingestion_id] = {
             "ingestion_id": ingestion_id,
@@ -119,7 +112,7 @@ async def ingest_data(request: IngestRequest):
             "batches": batch_objects,
             "priority": request.priority
         }
-    
+
     return {"ingestion_id": ingestion_id}
 
 @app.get("/status/{ingestion_id}")
@@ -127,7 +120,7 @@ async def get_status(ingestion_id: str):
     with processing_lock:
         if ingestion_id not in ingestion_store:
             raise HTTPException(status_code=404, detail="Ingestion ID not found")
-        
+
         data = ingestion_store[ingestion_id]
         return IngestionStatus(
             ingestion_id=data["ingestion_id"],
