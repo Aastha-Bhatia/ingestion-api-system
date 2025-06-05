@@ -1,12 +1,3 @@
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"message": "API is working!"}
-
-    
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -18,7 +9,19 @@ import time
 import heapq
 import threading    
 
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "API is working!"}
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Validation error"}
+    )
+
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
     return JSONResponse(
         status_code=400,
         content={"detail": "Validation error"}
