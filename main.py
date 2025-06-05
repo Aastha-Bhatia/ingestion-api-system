@@ -11,10 +11,6 @@ import threading
 
 app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "API is working!"}
-
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=400,
@@ -22,10 +18,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    return JSONResponse(
-        status_code=400,
-        content={"detail": "Validation error"}
-    )
+
+@app.get("/")
+def read_root():
+    return {"message": "API is working!"}
 
 ingestion_store: Dict[str, dict] = {}
 batch_queue = []
@@ -88,12 +84,8 @@ def process_batch_sync():
 
         time.sleep(0.1)
 
-
 background_thread = threading.Thread(target=process_batch_sync, daemon=True)
 background_thread.start()
-
-app = FastAPI()
-app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 @app.post("/ingest", status_code=202)
 async def ingest_data(request: IngestRequest):
