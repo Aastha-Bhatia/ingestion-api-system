@@ -4,7 +4,7 @@ A simple REST API for data ingestion with priority-based batch processing and ra
 
 ## 🚀 Live Demo
 
-**Deployed URL:** `https://ingestion-api-system.onrender.com`
+**Deployed URL:** https://ingestion-api-system.onrender.com
 
 ## API Endpoints
 
