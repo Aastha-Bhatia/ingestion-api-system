@@ -1,18 +1,11 @@
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
 
 app = FastAPI()
 
-@app.get("/", response_class=HTMLResponse)
-async def root():
-    return """
-    <html>
-        <head><title>Ingestion API</title></head>
-        <body>
-            <h1 style="text-align:center; color:green;">✅ This backend is running successfully on Render. <br> API is working fine!</h1>
-        </body>
-    </html>
-    """
+@app.get("/")
+def read_root():
+    return {"message": "API is working!"}
+
     
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
