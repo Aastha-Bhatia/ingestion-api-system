@@ -1,3 +1,11 @@
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+async def root():
+    return {"message": "🚀 Welcome to the Ingestion API!"}
+    
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -7,15 +15,7 @@ from enum import Enum
 import uuid
 import time
 import heapq
-import threading
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-async def root():
-    return {"message": "🚀 Welcome to the Ingestion API!"}
-    
+import threading    
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
